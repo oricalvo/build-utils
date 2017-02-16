@@ -1,11 +1,11 @@
 {
   "name": "build-utils",
-  "version": "1.0.18",
-  "description": "A collection of utils function for build scripts",
+  "version": "1.0.22",
+  "description": "A collection of utils functions for build scripts",
   "main": "index.js",
   "scripts": {
-    "pack": "node build/main.js pack",
-    "patch": "node build/main.js patch"
+    "pack": "node cli.js pack",
+    "patch": "node cli.js patch"
   },
   "author": "Ori Calvo",
   "license": "MIT",
@@ -18,15 +18,14 @@
     "shelljs": "^0.7.6"
   },
   "devDependencies": {
-    "@types/node": "^7.0.4",
-    "typescript": "^2.1.5",
-    "@types/core-js": "^0.9.35"
-  },
-  "peerDependencies": {
-    "@types/core-js": "^0.9.35"
+    "@types/node": "^7.0.5",
+    "typescript": "^2.1.5"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/oricalvo/build-utils.git"
+  },
+  "bin": {
+    "bu": "bin/bu.js"
   }
 }

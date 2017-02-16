@@ -1,5 +1,5 @@
 import * as fs from "fs";
-import * as fsExtra from "fs-extra";
+import * as fsExtra from "fs-extra/lib";
 import * as glob from "glob";
 import * as Bluebird from "bluebird";
 import * as path from "path";
@@ -15,8 +15,17 @@ export function directoryExists(dir) {
 }
 
 export async function isFile(path): Promise<boolean> {
-    const stat = await getStat(path);
-    return stat.isFile();
+    try {
+        const stat = await getStat(path);
+        return stat.isFile();
+    }
+    catch(err) {
+        if(err.code == "ENOENT") {
+            return false;
+        }
+
+        throw err;
+    }
 }
 
 export function getStat(path) {

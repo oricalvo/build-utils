@@ -25,7 +25,7 @@ export function spawn(command, options?) {
 
 export function exec(command: string, options?) {
     return new Promise(function(resolve, reject) {
-        console.log("exec " + command);
+        console.log("exec \"" + command + "\"");
 
         const child = shelljs.exec(command, options, function(code, stdout, stderr) {
             if(code != 0) {
