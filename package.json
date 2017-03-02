@@ -1,6 +1,6 @@
 {
   "name": "build-utils",
-  "version": "1.0.22",
+  "version": "1.0.26",
   "description": "A collection of utils functions for build scripts",
   "main": "index.js",
   "scripts": {
