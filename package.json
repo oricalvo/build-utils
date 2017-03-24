@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "pack": "node cli.js pack",
-    "patch": "node cli.js patch"
+    "patch": "node cli.js patch",
+    "link": "node cli.js link",
+    "unlink": "node cli.js unlink"
   },
   "author": "Ori Calvo",
   "license": "MIT",
