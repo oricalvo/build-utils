@@ -37,8 +37,17 @@ export function getStat(path) {
 }
 
 export async function isDirectory(path): Promise<boolean> {
-    const stat = await getStat(path);
-    return stat.isDirectory();
+    try {
+        const stat = await getStat(path);
+        return stat.isDirectory();
+    }
+    catch(err) {
+        if(err.code == "ENOENT") {
+            return false;
+        }
+
+        throw err;
+    }
 }
 
 export async function deleteDirectory(path) {
