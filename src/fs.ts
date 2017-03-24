@@ -14,6 +14,10 @@ export function directoryExists(dir) {
     });
 }
 
+export function fileExists(path) {
+    return isFile(path);
+}
+
 export async function isFile(path): Promise<boolean> {
     try {
         const stat = await getStat(path);
@@ -156,10 +160,14 @@ export async function writeJSONFile(path, obj) {
     await writeFile(path, text, "utf8");
 }
 
-export const searchGlob = Bluebird.promisify(glob);
+export const searchGlob: (pattern: string)=>Promise<string[]> = Bluebird.promisify(glob);
 
 export function excludeFiles(files, pattern) {
     return files.filter(file => {
         return !minimatch(file, pattern);
     });
+}
+
+export function appendFile(path: string, text: string) {
+    return fs["appendFileAsync"](path, text);
 }
