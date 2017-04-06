@@ -1,11 +1,13 @@
 {
   "name": "build-utils",
-  "version": "1.0.29",
+  "version": "1.0.30",
   "description": "A collection of utils functions for build scripts",
   "main": "index.js",
   "scripts": {
     "pack": "node cli.js pack",
-    "patch": "node cli.js patch"
+    "patch": "node cli.js patch",
+    "link": "node cli.js link",
+    "unlink": "node cli.js unlink"
   },
   "author": "Ori Calvo",
   "license": "MIT",

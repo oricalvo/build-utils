@@ -1,4 +1,4 @@
-import {copyGlob, copyFile} from "../src/fs";
+import {copyGlob, copyFile, deleteDirectory} from "../src/fs";
 import {exec} from "../src/process";
 import * as path from "path";
 
@@ -11,10 +11,13 @@ console.log(folders.package);
 export async function pack() {
     console.log("Creating npm package");
 
+    await deleteDirectory("./build_tmp");
+    await deleteDirectory("./package");
+
     await exec(path.resolve("node_modules/.bin/tsc") + " -p ./build/tsconfig.pack.json");
-    await copyGlob("./build_tmp/src/*.js", "./package");
-    await copyGlob("./build_tmp/src/*.d.ts", "./package");
-    await copyGlob("./build_tmp/bin/*.js", "./package/bin");
+    await copyGlob("./build_tmp/*.js", "./package");
+    await copyGlob("./build_tmp/*.d.ts", "./package");
+    await copyGlob("./bin/*.js", "./package/bin");
     await copyFile("./package.json", "package/package.json");
 }
 
@@ -32,4 +35,10 @@ export async function patch() {
     });
 
     await copyFile("package/package.json", "./package.json");
+}
+
+export async function link() {
+    await exec("npm link", {
+        cwd: "./package"
+    });
 }

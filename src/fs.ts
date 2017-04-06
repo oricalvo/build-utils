@@ -8,10 +8,12 @@ import * as minimatch from "minimatch";
 Bluebird.promisifyAll(fs);
 Bluebird.promisifyAll(fsExtra);
 
+export function getStat(path) {
+    return fs["statAsync"](path);
+}
+
 export function directoryExists(dir) {
-    return fs["statAsync"](dir).then(stat => {
-        return stat.isDirectory();
-    });
+    return isDirectory(dir);
 }
 
 export function fileExists(path) {
@@ -32,20 +34,25 @@ export async function isFile(path): Promise<boolean> {
     }
 }
 
-export function getStat(path) {
-    return fs["statAsync"](path);
-}
-
 export async function isDirectory(path): Promise<boolean> {
-    const stat = await getStat(path);
-    return stat.isDirectory();
+    try {
+        const stat = await getStat(path);
+        return stat.isDirectory();
+    }
+    catch(err) {
+        if(err.code == "ENOENT") {
+            return false;
+        }
+
+        throw err;
+    }
 }
 
 export async function deleteDirectory(path) {
     try {
         const isDir = await isDirectory(path);
         if (!isDir) {
-            throw new Error("Specified path \"" + path + "\" is not a directory");
+            return;
         }
 
         await fsExtra.removeAsync(path);
