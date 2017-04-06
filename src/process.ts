@@ -58,8 +58,6 @@ export function exec(command: string, options?) {
     command = fixCommand(command);
 
     return new Promise(function(resolve, reject) {
-        console.log("exec \"" + command + "\"");
-
         const child = shelljs.exec(command, options, function(code, stdout, stderr) {
             if(code != 0) {
                 console.log(stderr);
