@@ -1,6 +1,6 @@
 {
   "name": "build-utils",
-  "version": "1.0.31",
+  "version": "1.0.32",
   "description": "A collection of utils functions for build scripts",
   "main": "index.js",
   "scripts": {
@@ -17,6 +17,7 @@
     "fs-extra": "^2.0.0",
     "glob": "^7.1.1",
     "minimatch": "^3.0.3",
+    "request": "^2.81.0",
     "shelljs": "^0.7.6"
   },
   "devDependencies": {
