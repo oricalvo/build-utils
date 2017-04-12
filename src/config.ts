@@ -1,9 +1,9 @@
 import {readJSONFile, writeJSONFile} from "./fs";
 import {deepAssign} from "./object";
 
-export async function updateConfig(path, options) {
+export async function updateConfig(path, options, deep = true) {
     const obj = await readJSONFile(path);
-    const config = deepAssign({}, obj, options);
+    const config = deep ? deepAssign({}, obj, options) : Object.assign({}, obj, options);
     await writeJSONFile(path, config);
 }
 
