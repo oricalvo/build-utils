@@ -70,6 +70,10 @@ export function createDirectory(path) {
     return fsExtra.mkdirAsync(path);
 }
 
+export function ensureDirectory(path) {
+    return fsExtra.ensureDirAsync(path);
+}
+
 function getGlobBase(pattern) {
     let base = "";
     const parts = pattern.split("/");
