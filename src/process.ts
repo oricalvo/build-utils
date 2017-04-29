@@ -1,6 +1,7 @@
 import * as shelljs from "shelljs";
 import * as child_process from "child_process";
 import * as path from "path";
+import * as open from "open";
 
 //
 //  Spwans a new child process without waiting for it
@@ -54,7 +55,7 @@ function fixCommand(command: string) {
     return command;
 }
 
-export function exec(command: string, options?) {
+export function exec(command: string, options?): Promise<any> {
     command = fixCommand(command);
 
     return new Promise(function(resolve, reject) {
@@ -67,5 +68,13 @@ export function exec(command: string, options?) {
                 resolve();
             }
         });
+    });
+}
+
+export function open(document) {
+    return new Promise(function(resolve, reject) {
+        open(document);
+
+        resolve();
     });
 }
