@@ -33,14 +33,18 @@ function fixCommand(command: string) {
     let commandWithoutArgs;
     let args;
 
-    let index = command.indexOf(" ");
+    let index = command.indexOf(" -");
+    if(index == -1) {
+        index = command.indexOf(" /");
+    }
+
     if(index == -1) {
         commandWithoutArgs = command;
         args = null;
     }
     else {
         commandWithoutArgs = command.substring(0, index);
-        args = command.substring(index+1);
+        args = command.substring(index+2);
     }
 
     if(commandWithoutArgs.indexOf("/")==-1) {
@@ -48,6 +52,10 @@ function fixCommand(command: string) {
     }
 
     command = path.resolve(commandWithoutArgs);
+    if(command.indexOf(" ")!=-1) {
+        command = "\"" + command + "\"";
+    }
+
     if(args) {
         command = command + " " + args;
     }
@@ -56,9 +64,11 @@ function fixCommand(command: string) {
 }
 
 export function exec(command: string, options?): Promise<any> {
-    command = fixCommand(command);
-
     return new Promise(function(resolve, reject) {
+        command = fixCommand(command);
+
+        console.log("Executing command: " + command);
+
         const child = shelljs.exec(command, options, function(code, stdout, stderr) {
             if(code != 0) {
                 console.log(stderr);
