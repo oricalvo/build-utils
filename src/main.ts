@@ -18,7 +18,7 @@ async function run() {
         for(let tsConfig of tsConfigs) {
             if (await isFile(tsConfig)) {
                 console.log("Compiling tsconfig.json at " + tsConfig);
-                await exec("\"" + path.join(cwd, "node_modules/.bin/tsc\"") + " -p \"" + tsConfig + "\"");
+                await exec(`node_modules/.bin/tsc -p "${tsConfig}"`);
                 found = true;
                 break;
             }
@@ -26,7 +26,7 @@ async function run() {
 
         if(!found) {
             console.log("Compiling main.ts at " + mainTs);
-            await exec("\"" + path.join(cwd, "node_modules/.bin/tsc\"") + " " + mainTs);
+            await exec(`node_modules/.bin/tsc ${mainTs}`);
         }
     }
 
