@@ -2,6 +2,7 @@ import * as shelljs from "shelljs";
 import * as child_process from "child_process";
 import * as path from "path";
 import * as open from "open";
+import * as fs from "./fs";
 
 //
 //  Spwans a new child process without waiting for it
@@ -30,44 +31,64 @@ function fixCommand(command: string) {
         return command;
     }
 
+    let index;
     let commandWithoutArgs;
     let args;
 
-    let index = command.indexOf(" -");
-    if(index == -1) {
-        index = command.indexOf(" /");
-    }
+    if(command[0]=="\"") {
+        index = command.indexOf("\"", 1);
+        if(index==-1) {
+            throw new Error("Invalid command: " + command);
+        }
 
-    if(index == -1) {
-        commandWithoutArgs = command;
-        args = null;
+        commandWithoutArgs = command.substring(0, index);
+        args = command.substring(index+1);
     }
     else {
-        commandWithoutArgs = command.substring(0, index);
-        args = command.substring(index+2);
+        index = command.indexOf(" ");
+        if(index != -1) {
+            commandWithoutArgs = command.substring(0, index);
+            args = command.substring(index+1);
+        }
+        else {
+            commandWithoutArgs = command;
+            args = "";
+        }
     }
 
-    if(commandWithoutArgs.indexOf("/")==-1) {
-        return command;
-    }
+    commandWithoutArgs = path.normalize(commandWithoutArgs);
 
-    command = path.resolve(commandWithoutArgs);
-    if(command.indexOf(" ")!=-1) {
-        command = "\"" + command + "\"";
-    }
-
-    if(args) {
-        command = command + " " + args;
-    }
-
+    command = commandWithoutArgs + " " + args;
     return command;
+
+    // let index = command.indexOf(" -");
+    // if(index == -1) {
+    //     index = command.indexOf(" /");
+    // }
+    //
+    // if(index == -1) {
+    //     commandWithoutArgs = command;
+    //     args = "";
+    // }
+    // else {
+    //     commandWithoutArgs = command.substring(0, index);
+    //     args = command.substring(index + 1);
+    // }
+    //
+    // if(commandWithoutArgs.indexOf(" ")!=-1) {
+    //     //
+    //     //  Escape command with "command"
+    //     //
+    //     commandWithoutArgs = "\"" + commandWithoutArgs + "\"";
+    // }
+    //
+    // command = commandWithoutArgs + " " + args;
+    // return command;
 }
 
 export function exec(command: string, options?): Promise<any> {
     return new Promise(function(resolve, reject) {
         command = fixCommand(command);
-
-        console.log("Executing command: " + command);
 
         const child = shelljs.exec(command, options, function(code, stdout, stderr) {
             if(code != 0) {
@@ -86,5 +107,51 @@ export function open(document) {
         open(document);
 
         resolve();
+    });
+}
+
+export async function nodemon(filePath) {
+    if(!await fs.fileExists(filePath)) {
+        throw new Error("File does not exist: " + filePath);
+    }
+
+    const nodemon = path.join(process.cwd(), "node_modules/.bin/nodemon")
+    if(!await fs.fileExists(nodemon)) {
+        throw new Error("nodemon was not found at: " + nodemon);
+    }
+
+    exec("node_modules/.bin/nodemon " + filePath, {
+        async: true
+    });
+}
+
+export async function runbin(name, args = null) {
+    const relPath = "node_modules/.bin/" + name;
+    const fullPath = path.join(process.cwd(), relPath)
+    if(!await fs.fileExists(fullPath)) {
+        throw new Error("tool was not found at: " + fullPath);
+    }
+
+    let command = relPath;
+    if(args) {
+        command += (" " + args);
+    }
+    return exec(command, {
+        async: true
+    });
+}
+
+export async function tsc(tsconfigFilePath) {
+    if(!await fs.fileExists(tsconfigFilePath)) {
+        throw new Error("tsconfig.json was not found at: " + tsconfigFilePath);
+    }
+
+    const tsc = path.join(process.cwd(), "node_modules/.bin/tsc")
+    if(!await fs.fileExists(tsc)) {
+        throw new Error("tsc was not found at: " + tsc);
+    }
+
+    return exec("node_modules/.bin/tsc -p " + tsconfigFilePath, {
+        async: true
     });
 }
