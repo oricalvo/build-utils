@@ -75,7 +75,7 @@ export function exec(command: string, options?): Promise<any> {
                 reject(new Error("Shell command \"" + command + "\" failed with error code: " + code));
             }
             else {
-                resolve();
+                resolve(code);
             }
         });
     });
