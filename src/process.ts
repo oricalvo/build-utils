@@ -41,8 +41,8 @@ function fixCommand(command: string) {
             throw new Error("Invalid command: " + command);
         }
 
-        commandWithoutArgs = command.substring(0, index);
-        args = command.substring(index+1);
+        commandWithoutArgs = command.substring(0, index + 1);
+        args = command.substring(index+2);
     }
     else {
         index = command.indexOf(" ");
@@ -58,7 +58,7 @@ function fixCommand(command: string) {
 
     commandWithoutArgs = path.normalize(commandWithoutArgs);
 
-    command = commandWithoutArgs + " " + args;
+    command = commandWithoutArgs + (args ? " " + args : "");
     return command;
 
     // let index = command.indexOf(" -");
@@ -88,7 +88,9 @@ function fixCommand(command: string) {
 
 export function exec(command: string, options?): Promise<any> {
     return new Promise(function(resolve, reject) {
+        console.log("Original command is: \"" + command + "\"");
         command = fixCommand(command);
+        console.log("Fixed command is: \"" + command + "\"");
 
         const child = shelljs.exec(command, options, function(code, stdout, stderr) {
             if(code != 0) {
@@ -96,7 +98,7 @@ export function exec(command: string, options?): Promise<any> {
                 reject(new Error("Shell command \"" + command + "\" failed with error code: " + code));
             }
             else {
-                resolve();
+                resolve(code);
             }
         });
     });
