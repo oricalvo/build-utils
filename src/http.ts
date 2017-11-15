@@ -3,7 +3,6 @@ import * as Bluebird from "bluebird";
 import {http, https} from "follow-redirects";
 import * as fs from "fs";
 import * as url from "url";
-import {getPortPromise} from "portfinder";
 
 const request = Bluebird.promisify(request_);
 
@@ -50,8 +49,4 @@ export async function download(urlStr, dest) {
             reject(err);
         }
     });
-}
-
-export function getFreePort() {
-    return getPortPromise();
 }

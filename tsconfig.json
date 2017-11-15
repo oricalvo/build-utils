@@ -11,5 +11,8 @@
     "package",
     "build_tmp",
     "fs"
+  ],
+  "include": [
+    "src"
   ]
 }

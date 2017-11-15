@@ -1,8 +1,8 @@
+import {logger} from "./logger";
+
 const commands = {};
 let log = null;
 let error = null;
-enableLogging(true);
-
 
 class CLIError {
     constructor(public message) {
@@ -34,12 +34,12 @@ export async function run() {
         }
 
         const before = new Date();
-        log("Running command \"" + name + "\"");
+        logger("Running command \"" + name + "\"").log();
 
         await command.action(args);
 
         const after = new Date();
-        log("DONE " + (after.valueOf() - before.valueOf())/1000 + " secs");
+        logger("DONE " + (after.valueOf() - before.valueOf())/1000 + " secs").log();
     }
     catch(err) {
         if(err instanceof CLIError) {
@@ -47,17 +47,6 @@ export async function run() {
         }
         else {
             error(err);
-        }
-    }
-}
-
-export function enableLogging(enable: boolean) {
-    if(enable) {
-        log = console.log.bind(console);
-        error = console.error.bind(console);
-    }
-    else {
-        log = error = function() {
         }
     }
 }

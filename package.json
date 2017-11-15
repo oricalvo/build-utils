@@ -1,6 +1,6 @@
 {
   "name": "build-utils",
-  "version": "1.0.49",
+  "version": "1.0.80",
   "description": "A collection of utils functions for build scripts",
   "main": "index.js",
   "scripts": {
@@ -13,6 +13,8 @@
   "license": "MIT",
   "dependencies": {
     "bluebird": "^3.4.7",
+    "build-utils": "^1.0.57",
+    "complog": "^2.0.3",
     "deep-assign": "^2.0.0",
     "follow-redirects": "^1.2.3",
     "fs-extra": "^2.0.0",

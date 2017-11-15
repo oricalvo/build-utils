@@ -8,3 +8,5 @@ package
 node_modules
 yarn*.*
 .idea
+package
+

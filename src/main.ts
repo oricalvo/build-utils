@@ -1,3 +1,6 @@
+import {fileExists} from "./fs";
+import {logger} from "./logger";
+
 const fs = require("fs");
 const path = require("path");
 const {isFile} = require("./fs");
@@ -7,35 +10,45 @@ const cwd = process.cwd();
 run();
 
 async function run() {
-    const mainTs = path.join(cwd, "build/main.ts");
-    if (await isFile(mainTs)) {
-        const tsConfigs = [
-            path.join(cwd, "build/tsconfig.json"),
-            path.join(cwd, "tsconfig.json")
+    try {
+        const locations = [
+            "./build",
+            "./build/main"
         ];
 
-        let found = false;
-        for(let tsConfig of tsConfigs) {
-            if (await isFile(tsConfig)) {
-                console.log("Compiling tsconfig.json at " + tsConfig);
-                await exec(`node_modules/.bin/tsc -p "${tsConfig}"`);
-                found = true;
+        let found: string = null;
+
+        for (const location of locations) {
+            const tsFile = location + ".ts";
+
+            logger("Looking for build file at " + tsFile).log();
+
+            if (await fileExists(tsFile)) {
+                const tsConfigFile = path.join(tsFile, "../tsconfig.json");
+                if (await fileExists(tsConfigFile)) {
+                    await exec(`node_modules/.bin/tsc -p "${tsConfigFile}"`);
+                }
+                else {
+                    await exec(`node_modules/.bin/tsc ${tsFile}`);
+                }
+
+                found = location + ".js";
+                break;
+            }
+            else if (await fileExists(location + ".js")) {
+                found = location + ".js";
                 break;
             }
         }
 
-        if(!found) {
-            console.log("Compiling main.ts at " + mainTs);
-            await exec(`node_modules/.bin/tsc ${mainTs}`);
+        if (!found) {
+            logger("No build file was found").error();
+            return;
         }
-    }
 
-    let mainJs = path.join(cwd, "build/main.js");
-    if (!await isFile(mainJs)) {
-        console.error("Main build script was not found at " + mainJs);
-        return;
+        require(path.join(cwd, found));
     }
-
-    console.log("Loading " + mainJs);
-    require(mainJs);
+    catch(e){
+        console.error(e);
+    }
 }

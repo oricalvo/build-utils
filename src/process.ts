@@ -1,8 +1,9 @@
 import * as shelljs from "shelljs";
 import * as child_process from "child_process";
 import * as path from "path";
-import * as open from "open";
+import * as openLib from "open";
 import * as fs from "./fs";
+import {logger} from "./logger";
 
 //
 //  Spwans a new child process without waiting for it
@@ -87,10 +88,13 @@ function fixCommand(command: string) {
 }
 
 export function exec(command: string, options?): Promise<any> {
+    logger("exec " + command).log();
+
     return new Promise(function(resolve, reject) {
-        console.log("Original command is: \"" + command + "\"");
+        logger("Original command is \"" + command + "\"").log();
+
         command = fixCommand(command);
-        console.log("Fixed command is: \"" + command + "\"");
+        logger("Fixed command is \"" + command + "\"").log();
 
         const child = shelljs.exec(command, options, function(code, stdout, stderr) {
             if(code != 0) {
@@ -106,7 +110,7 @@ export function exec(command: string, options?): Promise<any> {
 
 export function open(document) {
     return new Promise(function(resolve, reject) {
-        open(document);
+        openLib(document);
 
         resolve();
     });
