@@ -1,11 +1,12 @@
 import {searchGlob, excludeFiles, deleteDirectory} from "./fs";
+import {logger} from "./logger";
 
 run();
 
 async function run() {
     await searchGlob("*[a-z].ts").then(files => {
         for (let file of files) {
-            console.log(file);
+            logger.log(file);
         }
     });
 

@@ -1,7 +1,7 @@
 import * as shelljs from "shelljs";
 import * as child_process from "child_process";
 import * as path from "path";
-import * as openLib from "open";
+import * as shellOpen from "open";
 import * as fs from "./fs";
 import {logger} from "./logger";
 
@@ -17,6 +17,10 @@ export function spawn(command, options?) {
     });
 
     return Promise.resolve().then(()=> {
+        logger.log("Spawning a new process");
+        logger.log("    " + command);
+        logger.log("    " + options);
+
         const child = child_process.spawn(command, [], options);
 
         //
@@ -88,17 +92,13 @@ function fixCommand(command: string) {
 }
 
 export function exec(command: string, options?): Promise<any> {
-    logger("exec " + command).log();
-
     return new Promise(function(resolve, reject) {
-        logger("Original command is \"" + command + "\"").log();
-
         command = fixCommand(command);
-        logger("Fixed command is \"" + command + "\"").log();
+        logger.log("Running command \"" + command + "\"");
 
         const child = shelljs.exec(command, options, function(code, stdout, stderr) {
             if(code != 0) {
-                console.log(stderr);
+                logger.log(stderr);
                 reject(new Error("Shell command \"" + command + "\" failed with error code: " + code));
             }
             else {
@@ -110,7 +110,7 @@ export function exec(command: string, options?): Promise<any> {
 
 export function open(document) {
     return new Promise(function(resolve, reject) {
-        openLib(document);
+        shellOpen(document);
 
         resolve();
     });

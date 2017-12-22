@@ -1,6 +1,6 @@
-import {fileExists} from "./fs";
-import {logger} from "./logger";
-
+import {enableLogging, logger} from "./logger";
+import {readJSONFile, replaceExt} from "./fs";
+import {parseCliArgs} from "./cli";
 const fs = require("fs");
 const path = require("path");
 const {isFile} = require("./fs");
@@ -10,45 +10,59 @@ const cwd = process.cwd();
 run();
 
 async function run() {
-    try {
-        const locations = [
-            "./build",
-            "./build/main"
+    const args = parseCliArgs();
+
+    if(args.options.hasOwnProperty("log")) {
+        enableLogging();
+    }
+
+    const mainTs = path.join(cwd, "build/main.ts");
+    let foundTsConfig: string = null;
+    let foundMainJs: string = null;
+
+    if (await isFile(mainTs)) {
+        logger.log("Found build/main.ts at " + mainTs);
+
+        const tsConfigs = [
+            path.join(cwd, "build/tsconfig.json"),
+            path.join(cwd, "tsconfig.json")
         ];
 
-        let found: string = null;
-
-        for (const location of locations) {
-            const tsFile = location + ".ts";
-
-            logger("Looking for build file at " + tsFile).log();
-
-            if (await fileExists(tsFile)) {
-                const tsConfigFile = path.join(tsFile, "../tsconfig.json");
-                if (await fileExists(tsConfigFile)) {
-                    await exec(`node_modules/.bin/tsc -p "${tsConfigFile}"`);
+        for(let tsConfig of tsConfigs) {
+            if (await isFile(tsConfig)) {
+                foundTsConfig = tsConfig;
+                logger.log("Compiling tsconfig.json at " + tsConfig);
+                await exec(`node_modules/.bin/tsc -p "${tsConfig}"`);
+                const config = await readJSONFile(tsConfig);
+                if(config.compilerOptions.outDir) {
+                    logger.log("tsc outDir is " + config.compilerOptions.outDir);
+                    foundMainJs = path.join(tsConfig, "..", config.compilerOptions.outDir, "main.js");
                 }
                 else {
-                    await exec(`node_modules/.bin/tsc ${tsFile}`);
+                    logger.log("Not tsc outDir was found");
+                    foundMainJs = replaceExt(mainTs, "js");
                 }
-
-                found = location + ".js";
-                break;
-            }
-            else if (await fileExists(location + ".js")) {
-                found = location + ".js";
                 break;
             }
         }
 
-        if (!found) {
-            logger("No build file was found").error();
-            return;
+        if(!foundTsConfig) {
+            logger.log("Compiling main.ts at " + mainTs);
+            await exec(`node_modules/.bin/tsc ${mainTs}`);
+            foundMainJs = path.join(cwd, "build/main.js");
         }
+    }
 
-        require(path.join(cwd, found));
+    if (!foundMainJs) {
+        logger.error("Main build script was not found");
+        return;
     }
-    catch(e){
-        console.error(e);
+
+    if (!await isFile(foundMainJs)) {
+        logger.error("Main build script was not found at " + foundMainJs);
+        return;
     }
+
+    logger.log("Loading " + foundMainJs);
+    require(foundMainJs);
 }

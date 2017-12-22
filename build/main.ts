@@ -1,15 +1,16 @@
 import {copyGlob, copyFile, deleteDirectory} from "../src/fs";
 import {exec} from "../src/process";
 import * as path from "path";
+import {logger} from "../src/logger";
 
 const folders = {
     package: path.join(__dirname, "../package"),
 }
 
-console.log(folders.package);
+logger.log(folders.package);
 
 export async function pack() {
-    console.log("Creating npm package");
+    logger.log("Creating npm package");
 
     await deleteDirectory("./build_tmp");
     await deleteDirectory("./package");

@@ -76,6 +76,7 @@ export function ensureDirectory(path) {
 
 function getGlobBase(pattern) {
     let base = "";
+    let hasMagic = false;
     const parts = pattern.split("/");
     for(let part of parts) {
         if(!glob.hasMagic(part)) {
@@ -85,6 +86,14 @@ function getGlobBase(pattern) {
 
             base += part;
         }
+        else {
+            hasMagic = true;
+            break;
+        }
+    }
+
+    if(!hasMagic) {
+        return null;
     }
 
     return base;
@@ -166,8 +175,8 @@ export async function readJSONFile(path) {
     return obj;
 }
 
-export async function writeJSONFile(path, obj) {
-    const text = JSON.stringify(obj, null, 2);
+export async function writeJSONFile(path, obj, ident?) {
+    const text = JSON.stringify(obj, null, ident);
     await writeFile(path, text, "utf8");
 }
 
@@ -181,4 +190,10 @@ export function excludeFiles(files, pattern) {
 
 export function appendFile(path: string, text: string) {
     return fs["appendFileAsync"](path, text);
+}
+
+export function replaceExt(filePath: string, ext: string) {
+    const info  = path.parse(filePath);
+    const res = path.join(info.dir, info.name + "." + ext);
+    return res;
 }
