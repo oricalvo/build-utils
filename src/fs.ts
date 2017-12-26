@@ -4,6 +4,7 @@ import * as glob from "glob";
 import * as Bluebird from "bluebird";
 import * as path from "path";
 import * as minimatch from "minimatch";
+import {promisifyNodeFn1} from "./promise";
 
 Bluebird.promisifyAll(fs);
 Bluebird.promisifyAll(fsExtra);
@@ -196,4 +197,109 @@ export function replaceExt(filePath: string, ext: string) {
     const info  = path.parse(filePath);
     const res = path.join(info.dir, info.name + "." + ext);
     return res;
+}
+
+export const getDirectoryContent = promisifyNodeFn1<string, string[]>(fs.readdir);
+
+export async function scanDirectoryTree(dirs: string|string[], callback: (file: string, index: number)=>void, concurrent: number): Promise<void> {
+    if(typeof dirs == "string") {
+        dirs = [dirs];
+    }
+
+    return <any>new Promise((resolve, reject) => {
+        const pending = [];
+        let running = 0;
+        let count = 0;
+        let err = null;
+
+        for(const dir of dirs) {
+            scan(dir);
+        }
+
+        async function scan(dir: string) {
+            if (err) {
+                return;
+            }
+
+            if (running >= concurrent) {
+                pending.push(dir);
+                return;
+            }
+
+            ++running;
+
+            getDirectoryContent(dir).then(names => {
+                if (err) {
+                    return;
+                }
+
+                for (const name of names) {
+                    const fullPath = path.join(dir, name);
+
+                    ++running;
+
+                    getStat(fullPath).then(stats => {
+                        if (err) {
+                            return;
+                        }
+
+                        if (stats.isDirectory()) {
+                            scan(fullPath);
+                        }
+                        else if (stats.isFile()) {
+                            try {
+                                callback(fullPath, ++count);
+                            }
+                            catch(e) {
+                                err = e;
+                                reject(err);
+                            }
+                        }
+
+                        --running;
+                        more();
+                    }).catch(e => {
+                        if (err) {
+                            return;
+                        }
+
+                        --running;
+
+                        err = e;
+                        reject(err);
+                    });
+                }
+
+                --running;
+            }).catch(e => {
+                if (err) {
+                    return;
+                }
+
+                --running;
+
+                err = e;
+                reject(err);
+            });
+        }
+
+        function more() {
+            process.nextTick(function () {
+                if (pending.length > 0) {
+                    const dir = pending.pop();
+
+                    scan(dir);
+                }
+                else {
+                    if (running == 0) {
+                        done();
+                    }
+                }
+            });
+        }
+
+        function done() {
+        }
+        resolve();
+    });
 }

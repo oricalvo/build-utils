@@ -1,3 +1,48 @@
+export function promisifyNodeFn1<T, R>(func): (arg: T) => Promise<R> {
+    return function(arg: T): Promise<R> {
+        return new Promise((resolve, reject) => {
+            func(arg, function (err, res) {
+                if(err) {
+                    reject(err);
+                    return;
+                }
+
+                resolve(res);
+            });
+        });
+    }
+}
+
+export function promisifyNodeFn2<T1, T2, R>(func): (arg1: T1, arg2: T2) => Promise<R> {
+    return function(arg1: T1, arg2: T2): Promise<R> {
+        return new Promise((resolve, reject) => {
+            func(arg1, arg2, function (err, res) {
+                if(err) {
+                    reject(err);
+                    return;
+                }
+
+                resolve(res);
+            });
+        });
+    }
+}
+
+export function promisifyNodeFn3<T1, T2, T3, R>(func): (arg1: T1, arg2: T2, arg3: T3) => Promise<R> {
+    return function(arg1: T1, arg2: T2, arg3: T3): Promise<R> {
+        return new Promise((resolve, reject) => {
+            func(arg1, arg2, arg3, function (err, res) {
+                if(err) {
+                    reject(err);
+                    return;
+                }
+
+                resolve(res);
+            });
+        });
+    }
+}
+
 export function delay(ms): Promise<void> {
     return new Promise(function(resolve, reject) {
         setTimeout(function() {
