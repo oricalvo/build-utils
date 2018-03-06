@@ -1,6 +1,6 @@
 {
   "name": "build-utils",
-  "version": "1.0.94",
+  "version": "1.0.105",
   "description": "A collection of utils functions for build scripts",
   "main": "index.js",
   "scripts": {
@@ -12,13 +12,13 @@
   "author": "Ori Calvo",
   "license": "MIT",
   "dependencies": {
-    "bluebird": "^3.4.7",
+    "bluebird": "^3.5.1",
     "build-utils": "^1.0.83",
     "deep-assign": "^2.0.0",
     "follow-redirects": "^1.2.3",
-    "fs-extra": "^2.0.0",
+    "fs-extra": "^5.0.0",
     "glob": "^7.1.1",
-    "minimatch": "^3.0.3",
+    "minimatch": "^3.0.4",
     "open": "^0.0.5",
     "request": "^2.81.0",
     "shelljs": "^0.7.6"

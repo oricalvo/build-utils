@@ -4,30 +4,38 @@ import * as path from "path";
 import * as shellOpen from "open";
 import * as fs from "./fs";
 import {logger} from "./logger";
+import {ChildProcess} from "child_process";
 
-//
-//  Spwans a new child process without waiting for it
-//  On Windows the child process is opened in its own window
-//
-export function spawn(command, options?) {
-    options = Object.assign({}, options || {}, {
-        shell: true,
-        detached: true,
-        stdio: "ignore",
-    });
+export function spawn(command, args, options?): Promise<ChildProcess> {
+    const opt = {
+        stdio: "inherit",
+        validateExitCode: true,
+    };
 
-    return Promise.resolve().then(()=> {
-        logger.log("Spawning a new process");
-        logger.log("    " + command);
-        logger.log("    " + options);
+    if(options) {
+        Object.assign(opt, options);
+    }
 
-        const child = child_process.spawn(command, [], options);
+    return new Promise((resolve, reject)=> {
+        const p = child_process.spawn(command, args, opt);
 
-        //
-        //  Detach from child process so the current process can exit while child
-        //  is still running
-        //
-        child.unref();
+        p.on("error", function(err) {
+            reject(err);
+        });
+
+        if(!opt.validateExitCode) {
+            resolve(p);
+        }
+        else {
+            p.on("close", function (code) {
+                if (code != 0) {
+                    reject(new Error("spawn return error code " + code));
+                }
+                else {
+                    resolve();
+                }
+            });
+        }
     });
 }
 
@@ -65,30 +73,6 @@ function fixCommand(command: string) {
 
     command = commandWithoutArgs + (args ? " " + args : "");
     return command;
-
-    // let index = command.indexOf(" -");
-    // if(index == -1) {
-    //     index = command.indexOf(" /");
-    // }
-    //
-    // if(index == -1) {
-    //     commandWithoutArgs = command;
-    //     args = "";
-    // }
-    // else {
-    //     commandWithoutArgs = command.substring(0, index);
-    //     args = command.substring(index + 1);
-    // }
-    //
-    // if(commandWithoutArgs.indexOf(" ")!=-1) {
-    //     //
-    //     //  Escape command with "command"
-    //     //
-    //     commandWithoutArgs = "\"" + commandWithoutArgs + "\"";
-    // }
-    //
-    // command = commandWithoutArgs + " " + args;
-    // return command;
 }
 
 export function exec(command: string, options?): Promise<any> {
