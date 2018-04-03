@@ -10,6 +10,7 @@ export function spawn(command, args, options?): Promise<ChildProcess> {
     const opt = {
         stdio: "inherit",
         validateExitCode: true,
+        unref: true,
     };
 
     if(options) {
@@ -24,7 +25,12 @@ export function spawn(command, args, options?): Promise<ChildProcess> {
         });
 
         if(!opt.validateExitCode) {
-            resolve(p);
+            if(options.unref) {
+                p.unref();
+                resolve();
+            }else {
+                resolve(p);
+            }
         }
         else {
             p.on("close", function (code) {
@@ -32,7 +38,12 @@ export function spawn(command, args, options?): Promise<ChildProcess> {
                     reject(new Error("spawn return error code " + code));
                 }
                 else {
-                    resolve();
+                    if(options.unref) {
+                        p.unref();
+                        resolve();
+                    }else {
+                        resolve(p);
+                    }
                 }
             });
         }

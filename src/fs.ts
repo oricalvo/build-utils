@@ -5,6 +5,7 @@ import * as Bluebird from "bluebird";
 import * as path from "path";
 import * as minimatch from "minimatch";
 import {promisifyNodeFn1} from "./promise";
+import * as chokidar from "chokidar";
 
 Bluebird.promisifyAll(fs);
 Bluebird.promisifyAll(fsExtra);
@@ -302,4 +303,79 @@ export async function scanDirectoryTree(dirs: string|string[], callback: (file: 
         }
         resolve();
     });
+}
+
+export function watchGlob(pattern, dest) {
+    const base = getGlobBase(pattern);
+    let ready = false;
+
+    const watcher = chokidar.watch(pattern, {
+        persistent: true
+    });
+
+    function resolveTarget(filePath) {
+        if(!base) {
+            //
+            //  pattern is not a glob but rather a file
+            //  in that case dest should be full path to target
+            //
+            return dest;
+        }
+
+        const rel = path.relative(base, filePath);
+        const target = path.join(dest, rel);
+        return target;
+    }
+
+    function onAddOrChange(filePath) {
+        if(!ready) {
+            return;
+        }
+
+        const target = resolveTarget(filePath);
+        console.log("Copying modified file from " + filePath + " to " + target);
+        return copyFile(filePath, target);
+    }
+
+    function onUnlink(filePath) {
+        if(!ready) {
+            return;
+        }
+
+        const target = resolveTarget(filePath);
+        console.log("Deleting file from " + target);
+        return deleteFile(target);
+    }
+
+    watcher.on("add", onAddOrChange);
+    watcher.on("change", onAddOrChange);
+    watcher.on("unlink", onUnlink);
+
+    watcher.on('ready', () => {
+        //
+        //  Ready is fired once chokidar finished travresing the file tree and raise add event
+        //
+        ready = true;
+    });
+}
+
+export async function copyAssets(assets: Asset[], watch: boolean) {
+    await Promise.all(assets.map(a => {
+        if(!getGlobBase(a.source)) {
+            return copyFile(a.source, a.target);
+        }
+
+        return copyGlob(a.source, a.target);
+    }));
+
+    if(watch) {
+        Promise.all(assets.map(a => {
+            return watchGlob(a.source, a.target);
+        }));
+    }
+}
+
+export interface Asset {
+    source: string;
+    target: string;
 }
