@@ -38,7 +38,7 @@ export function spawn(command, args, options?): Promise<ChildProcess> {
                     reject(new Error("spawn return error code " + code));
                 }
                 else {
-                    if(options.unref) {
+                    if(opt.unref) {
                         p.unref();
                         resolve();
                     }else {
