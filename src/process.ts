@@ -5,16 +5,92 @@ import * as shellOpen from "open";
 import * as fs from "./fs";
 import {logger} from "./logger";
 import {ChildProcess} from "child_process";
+import * as stringArgv from 'string-argv';
+import {promisify} from "util";
+import {stat as nativeStat} from "fs";
+import {fileExists} from "build-utils/fs";
+const stat = promisify(nativeStat);
 
-export function spawn(command, args, options?): Promise<ChildProcess> {
-    const opt = {
+export interface RunOptions {
+    stdio: "inherit"|"pipe"|"ignore";
+    validateExitCode: boolean;
+    unref: boolean;
+    shell?: boolean;
+    wait?: boolean;
+}
+
+export async function run(command, options?: RunOptions) {
+    const opt: RunOptions = {
         stdio: "inherit",
+        wait: true,
         validateExitCode: true,
         unref: true,
     };
 
     if(options) {
         Object.assign(opt, options);
+    }
+
+    const args = stringArgv(command);
+    const relativeOrAbsoluteExe = args[0];
+    const parsed = path.parse(relativeOrAbsoluteExe);
+    let exeFilePath = null;
+
+    if(process.platform == "win32") {
+        if(!path.isAbsolute(relativeOrAbsoluteExe) && relativeOrAbsoluteExe.indexOf("/")==-1) {
+            //
+            //  User specify something like "node"
+            //  Keep it
+            //
+            const bin = path.resolve("node_modules/.bin", relativeOrAbsoluteExe);
+            if(await fileExists(bin)) {
+                exeFilePath = bin;
+            }
+            else {
+                exeFilePath = relativeOrAbsoluteExe;
+            }
+        }
+        else {
+            //
+            //  User specify something like "node_modules/.bin/tsc"
+            //  Convert it to full path with Windows style backslash
+            //
+            exeFilePath = path.resolve(relativeOrAbsoluteExe);
+        }
+
+
+        if(!parsed.ext) {
+            const exeWithExt = exeFilePath + ".cmd";
+            if(await fileExists(exeWithExt)) {
+                exeFilePath += ".cmd";
+                parsed.ext = ".cmd"
+            }
+        }
+
+        if((!options || !options.hasOwnProperty("shell")) && parsed.ext == ".cmd") {
+            opt.shell = true;
+        }
+    }
+
+    const res = await spawn(exeFilePath, args.slice(1), opt);
+    return res;
+}
+
+export function spawn(command, args, options?): Promise<ChildProcess> {
+    const opt = {
+        stdio: "inherit",
+        validateExitCode: true,
+        wait: true,
+        unref: true,
+    };
+
+    if(options) {
+        Object.assign(opt, options);
+
+        if(!opt.wait) {
+            opt.validateExitCode = false;
+            opt.unref = false;
+        }
     }
 
     return new Promise((resolve, reject)=> {
@@ -24,29 +100,37 @@ export function spawn(command, args, options?): Promise<ChildProcess> {
             reject(err);
         });
 
-        if(!opt.validateExitCode) {
-            if(options.unref) {
+        if(!opt.wait) {
+            if(opt.unref) {
+                p.unref();
+                resolve();
+                return;
+            }
+
+            resolve(p);
+            return;
+        }
+
+        p.on("close", function (code) {
+            if(opt.validateExitCode) {
+                if (code != 0) {
+                    //
+                    //  In case of error we do not return the child_process
+                    //  object so we must unref
+                    //
+                    p.unref();
+                    reject(new Error("spawn return error code " + code));
+                    return;
+                }
+            }
+
+            if(opt.unref) {
                 p.unref();
                 resolve();
             }else {
                 resolve(p);
             }
-        }
-        else {
-            p.on("close", function (code) {
-                if (code != 0) {
-                    reject(new Error("spawn return error code " + code));
-                }
-                else {
-                    if(opt.unref) {
-                        p.unref();
-                        resolve();
-                    }else {
-                        resolve(p);
-                    }
-                }
-            });
-        }
+        });
     });
 }
 

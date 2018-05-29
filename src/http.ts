@@ -41,7 +41,7 @@ export async function download(urlStr, dest) {
                     resolve();
                 });
             }).on('error', function (err) { // Handle errors
-                fs.unlink(dest); // Delete the file async. (But we don't check the result)
+                fs.unlink(dest, function(){}); // Delete the file async. (But we don't check the result)
                 reject(err);
             });
         }
