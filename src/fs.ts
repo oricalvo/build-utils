@@ -6,11 +6,12 @@ import * as path from "path";
 import * as minimatch from "minimatch";
 import {promisifyNodeFn1} from "./promise";
 import * as chokidar from "chokidar";
+import {Stats} from "fs";
 
 Bluebird.promisifyAll(fs);
 Bluebird.promisifyAll(fsExtra);
 
-export function getStat(path) {
+export function getStat(path): Promise<Stats> {
     return fs["statAsync"](path);
 }
 
@@ -145,8 +146,8 @@ export function copyFiles(files, base, dest) {
 
 export async function deleteFile(path) {
     try {
-        const isDir = await isFile(path);
-        if (!isDir) {
+        const info = await getStat(path);
+        if(!info.isFile()) {
             throw new Error("Specified path \"" + path + "\" is not a file");
         }
 
