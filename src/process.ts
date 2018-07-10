@@ -92,14 +92,14 @@ export function spawn(command, args, options?): Promise<ChildProcess> {
     if(!opt.wait) {
         opt.validateExitCode = false;
 
-        //
-        //  Without changing below flags the caller waits for the termination of sub process
-        //
-        opt.unref = opt.detached;
-        opt.stdio = "ignore";
+        if(opt.detached) {
+            //
+            //  Without changing below flags the caller waits for the termination of sub process
+            //
+            opt.unref = true;
+            opt.stdio = "ignore";
+        }
     }
-
-    console.log("options", opt);
 
     return new Promise((resolve, reject)=> {
         const p = child_process.spawn(command, args, opt);
