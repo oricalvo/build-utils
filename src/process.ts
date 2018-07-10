@@ -81,17 +81,25 @@ export function spawn(command, args, options?): Promise<ChildProcess> {
         stdio: "inherit",
         validateExitCode: true,
         wait: true,
-        unref: true,
+        unref: undefined,
+        detached: undefined,
     };
 
     if(options) {
         Object.assign(opt, options);
-
-        if(!opt.wait) {
-            opt.validateExitCode = false;
-            opt.unref = false;
-        }
     }
+
+    if(!opt.wait) {
+        opt.validateExitCode = false;
+
+        //
+        //  Without changing below flags the caller waits for the termination of sub process
+        //
+        opt.unref = opt.detached;
+        opt.stdio = "ignore";
+    }
+
+    console.log("options", opt);
 
     return new Promise((resolve, reject)=> {
         const p = child_process.spawn(command, args, opt);
