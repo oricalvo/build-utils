@@ -380,3 +380,35 @@ export interface Asset {
     source: string;
     target: string;
 }
+
+export function waitForFileCreation(folder: string, relativeFilePath: string) {
+    return new Promise((resolve, reject)=> {
+        const watcher = chokidar.watch(folder, {
+            persistent: true
+        });
+
+        watcher
+            .on("add", filePath => {
+                if (filePath == path.normalize(path.join(folder, relativeFilePath))) {
+                    resolve();
+
+                    //
+                    //  For somereason the close method does not work inside the current tick
+                    //
+                    process.nextTick(()=> {
+                        watcher.close();
+                    });
+                }
+            })
+            .on("error", err => {
+                reject(err);
+
+                process.nextTick(()=> {
+                    //
+                    //  For somereason the close method does not work inside the current tick
+                    //
+                    watcher.close();
+                });
+            });
+    });
+}

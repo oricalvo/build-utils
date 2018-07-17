@@ -1,6 +1,6 @@
 {
   "name": "build-utils",
-  "version": "1.0.118",
+  "version": "1.0.119",
   "description": "A collection of utils functions for build scripts",
   "main": "index.js",
   "scripts": {
@@ -13,7 +13,7 @@
   "license": "MIT",
   "dependencies": {
     "bluebird": "^3.5.1",
-    "chokidar": "^2.0.2",
+    "chokidar": "^2.0.4",
     "deep-assign": "^2.0.0",
     "follow-redirects": "^1.2.3",
     "fs-extra": "^5.0.0",

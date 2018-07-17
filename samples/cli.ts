@@ -1,4 +1,4 @@
-import * as cli from "build-utils/cli";
+import * as cli from "../src/cli";
 
 cli.command("dev", dev);
 cli.run();

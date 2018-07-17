@@ -8,7 +8,7 @@ import {ChildProcess} from "child_process";
 import * as stringArgv from 'string-argv';
 import {promisify} from "util";
 import {stat as nativeStat} from "fs";
-import {fileExists} from "build-utils/fs";
+import {fileExists} from "./fs";
 const stat = promisify(nativeStat);
 
 export interface RunOptions {
