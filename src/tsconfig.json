@@ -5,9 +5,10 @@
     "sourceMap": true,
     "declaration": false,
     "lib": ["dom", "es2017"],
-    "outDir": "../build_out"
+    "outDir": "../src_out"
   },
-  "files": [
-    "./main.ts"
+  "include": [
+    "../src/**/*.ts",
+    "../bin/**/*.ts"
   ]
 }

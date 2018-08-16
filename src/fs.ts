@@ -5,6 +5,7 @@ import * as Bluebird from "bluebird";
 import * as path from "path";
 import * as minimatch from "minimatch";
 import {promisifyNodeFn1} from "./promise";
+import {LimitConcurrency} from "./tasks";
 import * as chokidar from "chokidar";
 import {Stats} from "fs";
 import {create} from "domain";
@@ -103,9 +104,9 @@ function getGlobBase(pattern) {
     return base;
 }
 
-export async function copyGlob(pattern, dest) {
+export async function copyGlob(pattern, dest, options?) {
     const base = getGlobBase(pattern);
-    const files = await searchGlob(pattern);
+    const files = await searchGlob(pattern, options);
     return copyFiles(files, base, dest);
 }
 
@@ -184,7 +185,7 @@ export async function writeJSONFile(path, obj, ident?) {
     await writeFile(path, text, "utf8");
 }
 
-export const searchGlob: (pattern: string)=>Promise<string[]> = Bluebird.promisify(glob);
+export const searchGlob: (pattern: string, options?)=>Promise<string[]> = Bluebird.promisify(glob);
 
 export function excludeFiles(files, pattern) {
     return files.filter(file => {
@@ -209,102 +210,40 @@ export async function scanDirectoryTree(dirs: string|string[], callback: (file: 
         dirs = [dirs];
     }
 
-    return <any>new Promise((resolve, reject) => {
-        const pending = [];
-        let running = 0;
-        let count = 0;
-        let err = null;
+    const queue = new LimitConcurrency(concurrent);
+    let count = 0;
 
-        for(const dir of dirs) {
-            scan(dir);
+    for(const dir of dirs) {
+        queue.run(async () => scanDir(dir));
+    }
+
+    async function scanDir(dir: string) {
+        const names = await getDirectoryContent(dir);
+
+        for (const name of names) {
+            const fullPath = path.join(dir, name);
+
+            queue.run(() => scanItem(fullPath));
         }
+    }
 
-        async function scan(dir: string) {
-            if (err) {
-                return;
+    async function scanItem(fullPath: string) {
+        const stats = await getStat(fullPath)
+
+        if (stats.isDirectory()) {
+            queue.run(() => scanDir(fullPath));
+        }
+        else if (stats.isFile()) {
+            try {
+                queue.run(() => <any>callback(fullPath, ++count));
             }
-
-            if (running >= concurrent) {
-                pending.push(dir);
-                return;
+            catch(err) {
+                //  ignore errors
             }
-
-            ++running;
-
-            getDirectoryContent(dir).then(names => {
-                if (err) {
-                    return;
-                }
-
-                for (const name of names) {
-                    const fullPath = path.join(dir, name);
-
-                    ++running;
-
-                    getStat(fullPath).then(stats => {
-                        if (err) {
-                            return;
-                        }
-
-                        if (stats.isDirectory()) {
-                            scan(fullPath);
-                        }
-                        else if (stats.isFile()) {
-                            try {
-                                callback(fullPath, ++count);
-                            }
-                            catch(e) {
-                                err = e;
-                                reject(err);
-                            }
-                        }
-
-                        --running;
-                        more();
-                    }).catch(e => {
-                        if (err) {
-                            return;
-                        }
-
-                        --running;
-
-                        err = e;
-                        reject(err);
-                    });
-                }
-
-                --running;
-            }).catch(e => {
-                if (err) {
-                    return;
-                }
-
-                --running;
-
-                err = e;
-                reject(err);
-            });
         }
+    }
 
-        function more() {
-            process.nextTick(function () {
-                if (pending.length > 0) {
-                    const dir = pending.pop();
-
-                    scan(dir);
-                }
-                else {
-                    if (running == 0) {
-                        done();
-                    }
-                }
-            });
-        }
-
-        function done() {
-        }
-        resolve();
-    });
+    return queue.wait();
 }
 
 export function watchGlob(pattern, dest) {

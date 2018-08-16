@@ -5,23 +5,39 @@ export interface ILogger {
     warn(message: string);
 }
 
-export class NullLogger implements ILogger {
-    log(message: string) {
-    }
+// class NullLogger implements ILogger {
+//     constructor() {
+//     }
+//
+// }
+//
 
-    error(message: string) {
-    }
+function createNullLogger() {
+    return {
+        log(message: string) {
+        },
 
-    warn(message: string) {
-    }
+        error(message: string) {
+            console.log("123");
+        },
+
+        warn(message: string) {
+        },
+    };
 }
 
-export let logger = new NullLogger();
+function createLogger() {
+    return {
+        log: console.log.bind(console, "[bu] INFO"),
+        error: console.error.bind(console, "[bu] ERROR"),
+        warn: console.warn.bind(console, "[bu] WARN"),
+    };
+}
+
+export const logger: ILogger = createNullLogger();
 
 export function enableLogging() {
-    logger = {
-        log: console.log.bind(console, "[bu]"),
-        error: console.error.bind(console, "[bu]"),
-        warn: console.warn.bind(console, "[bu]"),
-    }
+    console.log("enableLogging");
+
+    Object.assign(logger, createLogger());
 }

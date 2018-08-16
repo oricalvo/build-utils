@@ -22,6 +22,7 @@ export interface SpawnOptions {
     validateExitCode?: boolean;
     escapeCommand?: boolean
     resolveCommand?: boolean;
+    runWithShellForExtensionlessCommandOnWindows?: boolean;
 }
 
 export async function run(command, options?: SpawnOptions) {
@@ -30,6 +31,7 @@ export async function run(command, options?: SpawnOptions) {
         wait: true,
         validateExitCode: true,
         unref: true,
+        runWithShellForExtensionlessCommandOnWindows: true,
     };
 
     if(options) {
@@ -85,13 +87,14 @@ export async function run(command, options?: SpawnOptions) {
     return res;
 }
 
-export function spawn(command, args, options?: SpawnOptions): Promise<ChildProcess> {
+export async function spawn(command, args, options?: SpawnOptions): Promise<ChildProcess> {
     const opt: SpawnOptions = {
         stdio: "inherit",
         validateExitCode: true,
         wait: true,
         escapeCommand: true,
         resolveCommand: true,
+        runWithShellForExtensionlessCommandOnWindows: true,
     };
 
     if(options) {
@@ -110,7 +113,10 @@ export function spawn(command, args, options?: SpawnOptions): Promise<ChildProce
         }
     }
 
-    if(opt.resolveCommand) {
+    if(opt.resolveCommand && command.indexOf("/")!=-1) {
+        //
+        //  Do not resolve global commands such add "npm" or "node"
+        //
         command = path.resolve(command);
     }
 
@@ -120,11 +126,19 @@ export function spawn(command, args, options?: SpawnOptions): Promise<ChildProce
         }
     }
 
-    return new Promise((resolve, reject)=> {
-        const p = child_process.spawn(command, args, opt);
+    if(process.platform == "win32" && opt.runWithShellForExtensionlessCommandOnWindows) {
+        if(path.extname(command)=="") {
+            opt.shell = true;
+        }
+    }
+
+    const child = await new Promise((resolve, reject)=> {
+        const p: ChildProcess = child_process.spawn(command, args, opt);
+        let rejected = false;
 
         p.on("error", function(err) {
             reject(err);
+            rejected = true;
         });
 
         if(!opt.wait) {
@@ -139,6 +153,10 @@ export function spawn(command, args, options?: SpawnOptions): Promise<ChildProce
         }
 
         p.on("close", function (code) {
+            if(rejected) {
+                return;
+            }
+
             if(opt.validateExitCode) {
                 if (code != 0) {
                     //
@@ -159,6 +177,8 @@ export function spawn(command, args, options?: SpawnOptions): Promise<ChildProce
             }
         });
     });
+
+    return <any>child;
 }
 
 export async function nodemon(filePath) {

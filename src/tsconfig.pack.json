@@ -1,19 +1,13 @@
 {
+  "extends": "./tsconfig.json",
   "compilerOptions": {
     "target": "es5",
-    "module": "commonjs",
     "moduleResolution": "node",
+    "sourceMap": false,
     "inlineSources": true,
     "inlineSourceMap": true,
     "removeComments": false,
     "noImplicitAny": false,
-    "declaration": true,
-    "outDir": "../build_tmp",
-    "lib": ["dom", "es6"]
-  },
-  "include": [
-    "../src/**/*.ts",
-    "../bin/**/*.ts"
-  ]
+    "declaration": true
+  }
 }
-

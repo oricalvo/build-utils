@@ -1,23 +1,16 @@
-import {copyGlob, copyFile, deleteDirectory} from "../src/fs";
-import {exec} from "../src/process";
-import * as path from "path";
+import {copyFile, copyGlob, deleteDirectory} from "../src/fs";
+import {spawn} from "../src/process";
 import {logger} from "../src/logger";
-
-const folders = {
-    package: path.join(__dirname, "../package"),
-}
-
-logger.log(folders.package);
 
 export async function pack() {
     logger.log("Creating npm package");
 
-    await deleteDirectory("./build_tmp");
+    await deleteDirectory("./src_out");
     await deleteDirectory("./package");
 
-    await exec(path.resolve("node_modules/.bin/tsc") + " -p ./build/tsconfig.pack.json");
-    await copyGlob("./build_tmp/*.js", "./package");
-    await copyGlob("./build_tmp/*.d.ts", "./package");
+    await spawn("node_modules/.bin/tsc", ["-p", "./src/tsconfig.pack.json"]);
+    await copyGlob("./src_out/*.js", "./package", {ignore: "./src_out/*.tests.js"});
+    await copyGlob("./src_out/*.d.ts", "./package", {ignore: "./src_out/*.tests.d.ts"});
     await copyGlob("./bin/*.js", "./package/bin");
     await copyFile("./package.json", "package/package.json");
 }
@@ -25,13 +18,13 @@ export async function pack() {
 export async function patch() {
     await pack();
 
-    await exec("npm version patch", {
+    await spawn("npm", ["version", "patch"], {
         cwd: "./package",
     });
 
     await copyFile("readme.md", "package/readme.md");
 
-    await exec("npm publish", {
+    await spawn("npm", ["publish"], {
         cwd: "./package",
     });
 
@@ -39,7 +32,7 @@ export async function patch() {
 }
 
 export async function link() {
-    await exec("npm link", {
+    await spawn("npm", ["link"], {
         cwd: "./package"
     });
 }

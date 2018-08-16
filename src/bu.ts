@@ -12,9 +12,9 @@ run();
 async function run() {
     const args = parseCliArgs();
 
-    if(args.options.hasOwnProperty("log")) {
+    // if(args.options.hasOwnProperty("log")) {
         enableLogging();
-    }
+    // }
 
     const mainTs = path.join(cwd, "build/main.ts");
     let foundTsConfig: string = null;
