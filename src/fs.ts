@@ -7,6 +7,7 @@ import * as minimatch from "minimatch";
 import {promisifyNodeFn1} from "./promise";
 import * as chokidar from "chokidar";
 import {Stats} from "fs";
+import {create} from "domain";
 
 Bluebird.promisifyAll(fs);
 Bluebird.promisifyAll(fsExtra);
@@ -381,8 +382,12 @@ export interface Asset {
     target: string;
 }
 
-export function waitForFileCreation(folder: string, relativeFilePath: string) {
+export function waitForFileCreation(folder: string, relativeFilePath: string, createFolder?: boolean) {
     return new Promise((resolve, reject)=> {
+        if(createFolder) {
+            ensureDirectory(folder);
+        }
+
         const watcher = chokidar.watch(folder, {
             persistent: true
         });

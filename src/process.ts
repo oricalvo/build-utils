@@ -11,16 +11,21 @@ import {stat as nativeStat} from "fs";
 import {fileExists} from "./fs";
 const stat = promisify(nativeStat);
 
-export interface RunOptions {
-    stdio: "inherit"|"pipe"|"ignore";
-    validateExitCode: boolean;
-    unref: boolean;
+export interface SpawnOptions {
+    stdio?: "inherit"|"pipe"|"ignore";
+    unref?: boolean;
     shell?: boolean;
     wait?: boolean;
+    cwd?: string;
+    detached?: boolean;
+
+    validateExitCode?: boolean;
+    escapeCommand?: boolean
+    resolveCommand?: boolean;
 }
 
-export async function run(command, options?: RunOptions) {
-    const opt: RunOptions = {
+export async function run(command, options?: SpawnOptions) {
+    const opt: SpawnOptions = {
         stdio: "inherit",
         wait: true,
         validateExitCode: true,
@@ -70,19 +75,23 @@ export async function run(command, options?: RunOptions) {
         if((!options || !options.hasOwnProperty("shell")) && parsed.ext == ".cmd") {
             opt.shell = true;
         }
+
+        if(exeFilePath.indexOf(" ")!=-1) {
+            exeFilePath = "\"" + exeFilePath + "\"";
+        }
     }
 
     const res = await spawn(exeFilePath, args.slice(1), opt);
     return res;
 }
 
-export function spawn(command, args, options?): Promise<ChildProcess> {
-    const opt = {
+export function spawn(command, args, options?: SpawnOptions): Promise<ChildProcess> {
+    const opt: SpawnOptions = {
         stdio: "inherit",
         validateExitCode: true,
         wait: true,
-        unref: undefined,
-        detached: undefined,
+        escapeCommand: true,
+        resolveCommand: true,
     };
 
     if(options) {
@@ -98,6 +107,16 @@ export function spawn(command, args, options?): Promise<ChildProcess> {
             //
             opt.unref = true;
             opt.stdio = "ignore";
+        }
+    }
+
+    if(opt.resolveCommand) {
+        command = path.resolve(command);
+    }
+
+    if(opt.escapeCommand) {
+        if(command.indexOf(" ")!=-1) {
+            command = "\"" + command + "\"";
         }
     }
 
@@ -142,67 +161,6 @@ export function spawn(command, args, options?): Promise<ChildProcess> {
     });
 }
 
-function fixCommand(command: string) {
-    if(process.platform != "win32") {
-        return command;
-    }
-
-    let index;
-    let commandWithoutArgs;
-    let args;
-
-    if(command[0]=="\"") {
-        index = command.indexOf("\"", 1);
-        if(index==-1) {
-            throw new Error("Invalid command: " + command);
-        }
-
-        commandWithoutArgs = command.substring(0, index + 1);
-        args = command.substring(index+2);
-    }
-    else {
-        index = command.indexOf(" ");
-        if(index != -1) {
-            commandWithoutArgs = command.substring(0, index);
-            args = command.substring(index+1);
-        }
-        else {
-            commandWithoutArgs = command;
-            args = "";
-        }
-    }
-
-    commandWithoutArgs = path.normalize(commandWithoutArgs);
-
-    command = commandWithoutArgs + (args ? " " + args : "");
-    return command;
-}
-
-export function exec(command: string, options?): Promise<any> {
-    return new Promise(function(resolve, reject) {
-        command = fixCommand(command);
-        logger.log("Running command \"" + command + "\"");
-
-        const child = shelljs.exec(command, options, function(code, stdout, stderr) {
-            if(code != 0) {
-                logger.log(stderr);
-                reject(new Error("Shell command \"" + command + "\" failed with error code: " + code));
-            }
-            else {
-                resolve(code);
-            }
-        });
-    });
-}
-
-export function open(document) {
-    return new Promise(function(resolve, reject) {
-        shellOpen(document);
-
-        resolve();
-    });
-}
-
 export async function nodemon(filePath) {
     if(!await fs.fileExists(filePath)) {
         throw new Error("File does not exist: " + filePath);
@@ -213,24 +171,20 @@ export async function nodemon(filePath) {
         throw new Error("nodemon was not found at: " + nodemon);
     }
 
-    exec("node_modules/.bin/nodemon " + filePath, {
-        async: true
+    spawn("node_modules/.bin/nodemon", [filePath], {
+        shell: true
     });
 }
 
-export async function runbin(name, args = null) {
+export async function runbin(name, args?) {
     const relPath = "node_modules/.bin/" + name;
-    const fullPath = path.join(process.cwd(), relPath)
+    const fullPath = path.join(process.cwd(), relPath);
     if(!await fs.fileExists(fullPath)) {
         throw new Error("tool was not found at: " + fullPath);
     }
 
-    let command = relPath;
-    if(args) {
-        command += (" " + args);
-    }
-    return exec(command, {
-        async: true
+    return spawn(name, args, {
+        shell: true
     });
 }
 
@@ -244,7 +198,7 @@ export async function tsc(tsconfigFilePath) {
         throw new Error("tsc was not found at: " + tsc);
     }
 
-    return exec("node_modules/.bin/tsc -p " + tsconfigFilePath, {
-        async: true
+    return spawn("node_modules/.bin/tsc", ["-p", tsconfigFilePath], {
+        shell: true,
     });
 }
